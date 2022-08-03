@@ -2,6 +2,10 @@ import Blocks from './Blocks/Main.js'
 import Boosters from './Boosters/Main.js'
 import Enemies from './Enemies/Main.js'
 
+import Functions from './Functions/_Main.js'
+
+import * as Types from './Types/Main.js'
+
 window.onload = function() {
   const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
   const context = canvas.getContext("2d");
@@ -11,9 +15,8 @@ window.onload = function() {
 
   canvas.style.marginLeft = `${ Math.abs(innerHeight*0.5 - canvas.width) }`;
   
-  let direction = [1, 0];
-
-  const pages = [0, 0];
+  const direction: Types.Vector = [1, 0]
+  const pages: Types.Vector = [0, 0]
   
   window.onkeydown = function(event) {
     let code = event.code.toLowerCase();
@@ -126,62 +129,24 @@ window.onload = function() {
     context.textAlign = 'center';
   }
 
-  function __playerMove(lastBlock)
+  function __playerMove(tail: Types.Point)
   {
-    lastBlock.x = player.blocks[0].x + direction[0] * player.size;
-    lastBlock.y = player.blocks[0].y + direction[1] * player.size;
-
-    player.blocks.unshift(lastBlock);
-
-    startTime = Date.now();
-
-    if (lastBlock.x > canvas.width - borderOffsetX)
-    {
-      lastBlock.x = 0 + borderOffsetX;
-    } 
-    else if (lastBlock.x < 0 + borderOffsetX)
-    {
-      lastBlock.x = canvas.width - borderOffsetX;
-    } 
-    else if (lastBlock.y > canvas.height - borderOffsetY)
-    {
-      lastBlock.y = 0 + borderOffsetY;
-    } 
-    else if (lastBlock.y < 0 + borderOffsetY)
-    {
-      lastBlock.y = canvas.height - borderOffsetY;
-    }
+    Functions.ParryPlayer(borderOffsetX, borderOffsetY, player, direction, canvas, tail)
   }
 
-  function __onSceneCompleted(lastBlock)
+  function __onSceneCompleted(tail: Types.Point)
   {
-    if (won)
-    {
-      for (let index = 1; index < player.blocks.length; index++)
-      {
-        let block = player.blocks[index];
-
-        player.blocks.splice(index, 1);
-
-        block.x = lastBlock.x + direction[0] * player.size * (index);
-        block.y = lastBlock.y + direction[1] * player.size * (index);
-
-        player.blocks.unshift(block);
-      }
-
-      pages[Math.abs(direction[1])] += direction[Math.abs(direction[1])];
-    }
+    Functions.OnSceneCompleted(won, player, direction, tail, pages)()
   }
 
   function __onPlayerDeath()
   {
-    if (player.health <= 0) 
-    {
-      alert(deathMessages[Math.floor(Math.random() * deathMessages.length)]);
-      window.location.reload();
+    Functions.OnPlayerDeath(player, deathMessages)()
+  }
 
-      return undefined;
-    }
+  function __renderAxes(context: CanvasRenderingContext2D)
+  {
+    Functions.RenderAxes(context, lengthX, lengthY, borderOffsetX, borderOffsetY, blockConfigs, gameConfiguration)()   
   }
 
   function __scoreWin()
@@ -194,81 +159,23 @@ window.onload = function() {
     }
   }
 
-  function __renderAxes()
-  {
-    if (gameConfiguration.drawAxes) 
-    {
-      context.beginPath();
-      context.strokeStyle = 'black';
-
-      for (let x = 0; x < 2*lengthX; x++) 
-      {
-        if (2*borderOffsetX + x * blockConfigs.size > canvas.width) {
-          break;
-        }
-
-        context.moveTo(borderOffsetX + x * blockConfigs.size, borderOffsetY);
-        context.lineTo(borderOffsetX + x * blockConfigs.size, canvas.height - borderOffsetY);
-      }
-
-      for (let y = 0; y < 2*lengthY; y++) 
-      {
-        if (2*borderOffsetY + y * blockConfigs.size > canvas.height) {
-          break;
-        }
-
-        context.moveTo(borderOffsetX, borderOffsetY + y * blockConfigs.size);
-        context.lineTo(canvas.width - borderOffsetX, borderOffsetY + y * blockConfigs.size);
-      }
-
-      context.stroke();
-      context.beginPath();
-    }					
-  }
-
-  function __isSegmentTouchedAnother(first: Segment, second: Segment): boolean
-  {
-    return first.x + player.size > second.x && 
-           first.y + player.size > second.y && 
-           first.x < second.x + blockConfigs.size && 
-           first.y < second.y + blockConfigs.size
-  }
-
-  function __kill(): void 
-  {
-    player.health = -1
-  }
-
   function __killPlayer(): void
   {
-    const head: Segment = player.blocks[0]
-    const isStoped: boolean = direction.every(x => x === 0)
-    const isImmortal: boolean = player.immortal
-
-    if (isStoped == true || isImmortal == true)
-    {
-      return undefined
-    }
-
-    for (let index = 1; index < player.blocks.length; index++)
-    {
-      const segment: Segment = player.blocks[index];
-
-      if (__isSegmentTouchedAnother(head, segment) == true)
-      {
-        __kill()
-      }
-    }
+    Functions.KillPlayerIfItTouchedItself(player, direction, blockConfigs)
   }
 
-  function __drawPlayer(): void 
+  function __drawPlayer(context: CanvasRenderingContext2D, player: Player): void 
   {
+    context.fillStyle = 'red';
 
+    player.blocks.forEach(function(block) 
+    {
+      context.fillRect(block.x, block.y, player.size, player.size);
+    })
   }
 
 
   let startTime = Date.now();
-  let timingBeforeEnterAnotherRoom = startTime;
 
   const deathMessages: string[] = [ 
     `You're dead`, 
@@ -406,14 +313,8 @@ window.onload = function() {
     context.fillStyle = blockConfigs.background;
     context.fillRect(borderOffsetX, borderOffsetY, canvas.width - borderOffsetX, canvas.height - borderOffsetY);
 
-    __renderAxes();
-
-    context.fillStyle = 'red';
-    
-    player.blocks.forEach(function(block) 
-    {
-      context.fillRect(block.x, block.y, player.size, player.size);
-    });
+    __renderAxes(context);
+    __drawPlayer(context, player)
     
     requestAnimationFrame(loop);
   });
