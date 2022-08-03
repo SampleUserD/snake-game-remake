@@ -154,9 +154,15 @@ window.onload = function() {
     Functions.ParryPlayer(borderOffsetX, borderOffsetY, player, direction, canvas, tail)
   }
 
+  function __movePlayer(player: Types.Player, direction: Types.Vector): void 
+  {
+    // move player()
+    Functions.MovePlayer(player, direction)()
+  }
+
   function __goToTheNextLevelIfPlayerWon(tail: Types.Point)
   {
-    Functions.GoToTheNextLevelIfPlayerWon(won, player, direction, tail, pages)()
+    Functions.GoToTheNextLevelIfPlayerWon(won, direction, pages)()
   }
 
   function __onPlayerDeath()
@@ -383,6 +389,17 @@ window.onload = function() {
       player.score = 0;
     }
   }
+
+  function __onPlayerOutOfField(player: Types.Player): void 
+  {
+    const tail: Types.Point = player.blocks[player.blocks.length - 1]
+
+    if (__isSegmentOutOfField(context, tail) == true) 
+    {
+      __parryPlayer(tail)
+      __goToTheNextLevelIfPlayerWon(tail)
+    }
+  }
   
   __initializeContext(context)
   __addLevelToPosition0x0()
@@ -390,25 +407,19 @@ window.onload = function() {
   requestAnimationFrame(function loop() {
     context.clearRect(0, 0, canvas.width, canvas.height);
     
-    const tail = player.blocks.splice(player.blocks.length - 1, 1)[0];
-
-    if (__isSegmentOutOfField(context, tail) == true) 
-    {
-      __parryPlayer(tail)
-      __goToTheNextLevelIfPlayerWon(tail)
-    }
-
     if (player.blocks.length > 2) 
     {
       speedCoefficient = startSpeedCoefficient + (player.blocks.length - 3) * 2;
     }
 
+    __movePlayer(player, direction)
     __killPlayerIfItTouchesItself()
 
     __updatePlayerVictory()
 
     __onPlayerDeath()
     __onLevelCompleted(player)    
+    __onPlayerOutOfField(player)
     __makePlayerImmortalIfThereIsABossBeatedOnTheLevel(player)
 
     __renderBackground(context)

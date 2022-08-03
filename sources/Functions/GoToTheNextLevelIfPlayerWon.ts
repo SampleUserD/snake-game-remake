@@ -8,10 +8,8 @@ import { MovePlayer } from './MovePlayer.js'
 // @direction --> player
 // @pages <=> @scenes
 export const GoToTheNextLevelIfPlayerWon = (function(
-  won: boolean, 
-  player: Player, 
+  won: boolean,
   direction: Vector, 
-  tail: Point, 
   pages: Vector)
 {
   return (function() : void
@@ -20,9 +18,6 @@ export const GoToTheNextLevelIfPlayerWon = (function(
     {
       return undefined
     }
-
-    // move player()
-    MovePlayer(player, tail, direction)()
 
     // on next page ()
     pages[Math.abs(direction[1])] += direction[Math.abs(direction[1])];
