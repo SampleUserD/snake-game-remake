@@ -45,6 +45,19 @@ window.onload = function() {
   };
   
 
+  type Coordinate = [number, number]
+  type Segment = { x: number, y: number }
+  type Player = { 
+    blocks: Segment[], 
+    health: number, 
+    size: number, 
+    score: number, 
+    immortal: boolean 
+  }
+  type Scene = {
+    blocks: ({ position: Coordinate, block: any })[]
+  }
+
   const blockConfigs = { size: 10, background: 'transparent' }; // 15
 
   const lengthX = (canvas.width - canvas.width%blockConfigs.size)/blockConfigs.size;
@@ -55,12 +68,34 @@ window.onload = function() {
 
   let won = false;
 
-  let player = { blocks: [{ x: borderOffsetX, y: borderOffsetY }, { x: borderOffsetX+blockConfigs.size, y: borderOffsetY }], health: 500, size: blockConfigs.size, score: 0, immortal: false };
+  let player: Player = { 
+    blocks: [
+      { 
+        x: borderOffsetX, 
+        y: borderOffsetY 
+      }, 
+      { 
+        x: borderOffsetX+blockConfigs.size, 
+        y: borderOffsetY 
+      }
+    ],
+    health: 500, 
+    size: blockConfigs.size, 
+    score: 0, 
+    immortal: false 
+  }
+
   let levelsCompleted = 0;
 
   const scenes = [];
   const gameConfiguration = { drawAxes: false };
 
+
+
+  function __findScene(scene: Coordinate): void 
+  {
+    
+  }
 
   function __init()
   {
@@ -148,14 +183,17 @@ window.onload = function() {
       return undefined;
     }
   }
+
   function __scoreWin()
   {
     won = (scenes.find(scene => scene.scene.every((page, index) => page == pages[index])) || { completed: false }).completed;
 
-    if (!scenes.find(scene => scene.scene.every((page, index) => page == pages[index]))) {
+    if (!scenes.find(scene => scene.scene.every((page, index) => page == pages[index]))) 
+    {
       won = true;
     }
   }
+
   function __renderAxes()
   {
     if (gameConfiguration.drawAxes) 
@@ -187,28 +225,62 @@ window.onload = function() {
       context.beginPath();
     }					
   }
-  function __killPlayer()
+
+  function __isSegmentTouchedAnother(first: Segment, second: Segment): boolean
   {
+    return first.x + player.size > second.x && 
+           first.y + player.size > second.y && 
+           first.x < second.x + blockConfigs.size && 
+           first.y < second.y + blockConfigs.size
+  }
+
+  function __kill(): void 
+  {
+    player.health = -1
+  }
+
+  function __killPlayer(): void
+  {
+    const head: Segment = player.blocks[0]
+    const isStoped: boolean = direction.every(x => x === 0)
+    const isImmortal: boolean = player.immortal
+
+    if (isStoped == true || isImmortal == true)
+    {
+      return undefined
+    }
+
     for (let index = 1; index < player.blocks.length; index++)
     {
-      const block = player.blocks[index];
+      const segment: Segment = player.blocks[index];
 
-      if (direction[0] === 0 && direction[1] === 0 || player.immortal)
+      if (__isSegmentTouchedAnother(head, segment) == true)
       {
-        break;
-      }
-
-      if (player.blocks[0].x + player.size > block.x && player.blocks[0].y + player.size > block.y && player.blocks[0].x < block.x + blockConfigs.size && player.blocks[0].y < block.y + blockConfigs.size)
-      {
-        player.health = -1;
+        __kill()
       }
     }
   }
 
+  function __drawPlayer(): void 
+  {
+
+  }
+
+
   let startTime = Date.now();
   let timingBeforeEnterAnotherRoom = startTime;
 
-  const deathMessages = [ `You're dead`, `Ambulance was calling you`, `You should be alive`, `Press OK!`, `Repeat it, press button`, `You're crawling like a boss`, `MMM, delicious snake on da ground!`, `There ain't valley of snake...`, `You should be at next door right now...` ];
+  const deathMessages: string[] = [ 
+    `You're dead`, 
+    `Ambulance was calling you`, 
+    `You should be alive`, 
+    `Press OK!`, 
+    `Repeat it, press button`, 
+    `You're crawling like a boss`, 
+    `MMM, delicious snake on da ground!`, 
+    `There ain't valley of snake...`, 
+    `You should be at next door right now...` 
+  ];
   
   const startSpeedCoefficient = 30 + (player.blocks.length - 3)*2;
   let speedCoefficient = startSpeedCoefficient;
@@ -286,15 +358,27 @@ window.onload = function() {
           });
         } else {
           scene.blocks.forEach((block, index) => {
-            if (block === null || block.block instanceof Boosters.Apple || !(block.drawable || !('drawable' in block))) {
+            if (block === null || 
+              block.block instanceof Boosters.Apple || 
+              !(block.drawable || !('drawable' in block))) {
               return undefined;
             }
 
             context.strokeStyle = 'red';
-            context.strokeRect(block.position[0]*blockConfigs.size + borderOffsetX, block.position[1]*blockConfigs.size + borderOffsetY, blockConfigs.size, blockConfigs.size);
+            context.strokeRect(
+              block.position[0] * blockConfigs.size + borderOffsetX, 
+              block.position[1] * blockConfigs.size + borderOffsetY, 
+              blockConfigs.size, 
+              blockConfigs.size
+            );
             
             context.fillStyle = 'rgba(0, 0, 0, 0.6)';
-            context.fillRect(block.position[0]*blockConfigs.size + borderOffsetX, block.position[1]*blockConfigs.size + borderOffsetY, blockConfigs.size, blockConfigs.size);
+            context.fillRect(
+              block.position[0] * blockConfigs.size + borderOffsetX, 
+              block.position[1] * blockConfigs.size + borderOffsetY, 
+              blockConfigs.size, 
+              blockConfigs.size
+            );
           });
         }
       }
