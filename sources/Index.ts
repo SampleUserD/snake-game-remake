@@ -198,7 +198,7 @@ window.onload = function() {
         block.position[1]*blockConfigs.size + borderOffsetY
       ])
 
-      if (block.renderable == true) 
+      if (block.drawable == true) 
       {
         block.block.draw(context, blockConfigs, { width: canvas.width, height: canvas.height });
       }
