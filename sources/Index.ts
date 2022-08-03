@@ -94,11 +94,25 @@ window.onload = function() {
   const scenes = [];
   const gameConfiguration = { renderAxes: false };
 
-  function __init()
+  const startSpeedCoefficient = 30 + (player.blocks.length - 3)*2;
+  let speedCoefficient = startSpeedCoefficient;
+
+  function __initializeContext(context: CanvasRenderingContext2D): void 
+  {
+    const canvas: HTMLCanvasElement = context.canvas
+
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    context.font = '20px Helvetica';
+    context.textBaseline = 'middle';
+    context.textAlign = 'center';
+  }
+
+  function __addLevelToPosition0x0()
   {
     for (let blockPosition = 0; blockPosition < lengthX; blockPosition++)
     {
-      const scene = scenes.find(scene => scene.scene[0] == 0 && scene.scene[1] == 0) || { blocks: [], completed: true };
+      const scene = __getCurrentScene({ blocks: [], completed: true });
 
       scene.blocks.push({ 
         position: [
@@ -116,11 +130,6 @@ window.onload = function() {
         block: new Blocks.Light([], blockConfigs.size) 
       })
     }
-
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    context.font = '20px Helvetica';
-    context.textBaseline = 'middle';
-    context.textAlign = 'center';
   }
 
   function __isSegmentOutOfField(context: CanvasRenderingContext2D, segment: Types.Point): boolean 
@@ -375,10 +384,8 @@ window.onload = function() {
     }
   }
   
-  const startSpeedCoefficient = 30 + (player.blocks.length - 3)*2;
-  let speedCoefficient = startSpeedCoefficient;
-
-  __init();
+  __initializeContext(context)
+  __addLevelToPosition0x0()
 
   requestAnimationFrame(function loop() {
     context.clearRect(0, 0, canvas.width, canvas.height);
