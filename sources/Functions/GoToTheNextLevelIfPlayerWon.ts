@@ -7,7 +7,7 @@ import { MovePlayer } from './MovePlayer.js'
 // @won --> @player
 // @direction --> player
 // @pages <=> @scenes
-export const OnSceneCompleted = (function(
+export const GoToTheNextLevelIfPlayerWon = (function(
   won: boolean, 
   player: Player, 
   direction: Vector, 
