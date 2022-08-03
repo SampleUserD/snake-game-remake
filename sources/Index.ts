@@ -108,39 +108,80 @@ window.onload = function() {
     context.textAlign = 'center';
   }
 
-  function __addLevelToPosition0x0()
+  function __addLevelToPosition0x0(context: CanvasRenderingContext2D)
   {
+    const [ lengthX, lengthY ]: Types.Vector = CalculateBlocksLengthsThatFitsOnScreen(context)
+    const size: number = GetUnifiedSize()
+
     for (let blockPosition = 0; blockPosition < lengthX; blockPosition++)
     {
       const scene = __getCurrentScene({ blocks: [], completed: true });
 
       scene.blocks.push({ 
-        position: [
-          blockPosition, 
-          Math.round(lengthY / 4)
-        ], 
-        block: new Blocks.Light([], blockConfigs.size) 
+        position: [ blockPosition, Math.round(lengthY / 4) ], 
+        block: new Blocks.Light([], size) 
       })
 
       scene.blocks.push({ 
-        position: [
-          blockPosition, 
-          lengthY - Math.round(lengthY / 4) - 3
-        ], 
-        block: new Blocks.Light([], blockConfigs.size) 
+        position: [ blockPosition, lengthY - Math.round(lengthY / 4) - 3 ], 
+        block: new Blocks.Light([], size) 
       })
     }
   }
 
+  function GetUnifiedSize(): number 
+  {
+    return blockConfigs.size
+  }
+
+  function CalculateBlocksLengthsThatFitsOnScreen(context: CanvasRenderingContext2D): Types.Vector
+  {
+    const size: number = GetUnifiedSize()
+    const width: number = context.canvas.width
+    const height: number = context.canvas.height
+
+    return [
+      (width - width % size) / size,
+      (height - height % size) / size
+    ]
+  }
+
+  function CalculateBorders(context: CanvasRenderingContext2D): Types.Vector
+  {
+    const size: number = GetUnifiedSize()
+    const width: number = context.canvas.width
+    const height: number = context.canvas.height
+    const [x, y]: Types.Vector = CalculateBlocksLengthsThatFitsOnScreen(context)
+
+    return [
+      (width - x * size) / 2,
+      (height - y * size) / 2
+    ]
+  }
+
+  function MapToPositionOnScreen(context: CanvasRenderingContext2D, position: Types.Vector): Types.Vector
+  {
+    const size: number = GetUnifiedSize()
+    const [x, y]: Types.Vector = CalculateBorders(context)
+
+    return [
+      position[0] * size + x, 
+      position[1] * size + y
+    ]
+  }
+
   function __isSegmentOutOfField(context: CanvasRenderingContext2D, segment: Types.Point): boolean 
   {
-    const canvas: HTMLCanvasElement = context.canvas
+    const size: number = GetUnifiedSize()
+    const width: number = context.canvas.width
+    const height: number = context.canvas.height
+    const [x, y]: Types.Vector = CalculateBorders(context)
 
     return (
-      segment.x + player.size > canvas.width - borderOffsetX || 
-      segment.x + player.size < 0 + borderOffsetX || 
-      segment.y + player.size > canvas.height - borderOffsetY ||
-      segment.y + player.size < 0 + borderOffsetY
+      segment.x + size > width - x || 
+      segment.x + size < 0 + x || 
+      segment.y + size > height - y ||
+      segment.y + size < 0 + y
     )
   }
 
@@ -160,18 +201,21 @@ window.onload = function() {
     Functions.MovePlayer(player, direction)()
   }
 
-  function __goToTheNextLevelIfPlayerWon(tail: Types.Point)
+  function __goToTheNextLevelIfPlayerWon()
   {
     Functions.GoToTheNextLevelIfPlayerWon(won, direction, pages)()
   }
 
-  function __onPlayerDeath()
+  function __onPlayerDeath(player: Types.Player)
   {
     Functions.OnPlayerDeath(player, DEATH_MESSAGES)()
   }
 
   function __renderAxes(context: CanvasRenderingContext2D)
   {
+    const [ lengthX, lengthY ]: Types.Vector = CalculateBlocksLengthsThatFitsOnScreen(context)
+    const [ borderOffsetX, borderOffsetY ]: Types.Vector = CalculateBorders(context)
+
     Functions.RenderAxes(context, lengthX, lengthY, borderOffsetX, borderOffsetY, blockConfigs, gameConfiguration)()   
   }
 
@@ -208,19 +252,16 @@ window.onload = function() {
 
       const _block = block.block
 
-      _block.setCoordinates([
-        block.position[0] * blockConfigs.size + borderOffsetX, 
-        block.position[1]*blockConfigs.size + borderOffsetY
-      ])
+      _block.setCoordinates(MapToPositionOnScreen(context, _block.position))
 
       if (block.drawable == true) 
       {
-        block.block.draw(context, blockConfigs, { width: canvas.width, height: canvas.height });
+        _block.draw(context, blockConfigs, { width: canvas.width, height: canvas.height });
       }
 
       if (block.actable == true) 
       {
-        block.block.act(player, context, blockConfigs, { width: canvas.width, height: canvas.height }, scene, index, direction);
+        _block.act(player, context, blockConfigs, { width: canvas.width, height: canvas.height }, scene, index, direction);
       }
     });
   }
@@ -238,21 +279,14 @@ window.onload = function() {
         return undefined;
       }
 
+      const [x, y]: Types.Vector = MapToPositionOnScreen(context, block.position)
+      const size: number = GetUnifiedSize()
+
       context.strokeStyle = 'red';
-      context.strokeRect(
-        block.position[0] * blockConfigs.size + borderOffsetX,
-        block.position[1] * blockConfigs.size + borderOffsetY,
-        blockConfigs.size,
-        blockConfigs.size
-      );
+      context.strokeRect(x, y, size, size)
 
       context.fillStyle = 'rgba(0, 0, 0, 0.6)';
-      context.fillRect(
-        block.position[0] * blockConfigs.size + borderOffsetX,
-        block.position[1] * blockConfigs.size + borderOffsetY,
-        blockConfigs.size,
-        blockConfigs.size
-      );
+      context.fillRect(x, y, size, size)
     });
   }
 
@@ -351,10 +385,12 @@ window.onload = function() {
 
   function __showCurrentScenePosition(context: CanvasRenderingContext2D, scene): void 
   {
+    const canvas: HTMLCanvasElement = context.canvas
     const position: [number, number] = scene.scene
+    const [x, y]: Types.Vector = CalculateBorders(context)
 
     context.fillStyle = 'black'
-    context.fillText(`(${ position[0] }:${ position[1] })`, canvas.width/2, 10 + borderOffsetY)
+    context.fillText(`(${ position[0] }:${ position[1] })`, canvas.width / 2, 10 + y)
   }
 
   function __renderBackground(context: CanvasRenderingContext2D): void 
@@ -397,12 +433,12 @@ window.onload = function() {
     if (__isSegmentOutOfField(context, tail) == true) 
     {
       __parryPlayer(tail)
-      __goToTheNextLevelIfPlayerWon(tail)
+      __goToTheNextLevelIfPlayerWon()
     }
   }
   
   __initializeContext(context)
-  __addLevelToPosition0x0()
+  __addLevelToPosition0x0(context)
 
   requestAnimationFrame(function loop() {
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -417,7 +453,7 @@ window.onload = function() {
 
     __updatePlayerVictory()
 
-    __onPlayerDeath()
+    __onPlayerDeath(player)
     __onLevelCompleted(player)    
     __onPlayerOutOfField(player)
     __makePlayerImmortalIfThereIsABossBeatedOnTheLevel(player)
