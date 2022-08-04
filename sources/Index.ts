@@ -97,7 +97,7 @@ window.onload = function() {
   const startSpeedCoefficient = 30 + (player.blocks.length - 3)*2;
   let speedCoefficient = startSpeedCoefficient;
 
-  function __initializeContext(context: CanvasRenderingContext2D): void 
+  function InitializeContext(context: CanvasRenderingContext2D): void 
   {
     const canvas: HTMLCanvasElement = context.canvas
 
@@ -108,14 +108,14 @@ window.onload = function() {
     context.textAlign = 'center';
   }
 
-  function __addLevelToPosition0x0(context: CanvasRenderingContext2D)
+  function AddLevelToPosition0x0(context: CanvasRenderingContext2D)
   {
     const [ lengthX, lengthY ]: Types.Vector = CalculateBlocksLengthsThatFitsOnScreen(context)
     const size: number = GetUnifiedSize()
 
     for (let blockPosition = 0; blockPosition < lengthX; blockPosition++)
     {
-      const scene = __getCurrentScene({ blocks: [], completed: true });
+      const scene = GetCurrentScene({ blocks: [], completed: true });
 
       scene.blocks.push({ 
         position: [ blockPosition, Math.round(lengthY / 4) ], 
@@ -170,7 +170,7 @@ window.onload = function() {
     ]
   }
 
-  function __isSegmentOutOfField(context: CanvasRenderingContext2D, segment: Types.Point): boolean 
+  function IsSegmentOutOfField(context: CanvasRenderingContext2D, segment: Types.Point): boolean 
   {
     const size: number = GetUnifiedSize()
     const width: number = context.canvas.width
@@ -185,33 +185,33 @@ window.onload = function() {
     )
   }
 
-  function __isSegmentTouchesAnother(first: Types.Point, second: Types.Point): boolean
+  function IsSegmentTouchesAnother(first: Types.Point, second: Types.Point): boolean
   {
     return Functions.IsSegmentTouchedAnother(player, blockConfigs)(first, second)
   }
 
-  function __parryPlayer(tail: Types.Point)
+  function ParryPlayer(tail: Types.Point)
   {
     Functions.ParryPlayer(borderOffsetX, borderOffsetY, player, direction, canvas, tail)
   }
 
-  function __movePlayer(player: Types.Player, direction: Types.Vector): void 
+  function MovePlayer(player: Types.Player, direction: Types.Vector): void 
   {
     // move player()
     Functions.MovePlayer(player, direction)()
   }
 
-  function __goToTheNextLevelIfPlayerWon()
+  function GoToTheNextLevelIfPlayerWon()
   {
     Functions.GoToTheNextLevelIfPlayerWon(won, direction, pages)()
   }
 
-  function __onPlayerDeath(player: Types.Player)
+  function OnPlayerDeath(player: Types.Player)
   {
     Functions.OnPlayerDeath(player, DEATH_MESSAGES)()
   }
 
-  function __renderAxes(context: CanvasRenderingContext2D)
+  function RenderAxes(context: CanvasRenderingContext2D)
   {
     const [ lengthX, lengthY ]: Types.Vector = CalculateBlocksLengthsThatFitsOnScreen(context)
     const [ borderOffsetX, borderOffsetY ]: Types.Vector = CalculateBorders(context)
@@ -219,17 +219,17 @@ window.onload = function() {
     Functions.RenderAxes(context, lengthX, lengthY, borderOffsetX, borderOffsetY, blockConfigs, gameConfiguration)()   
   }
 
-  function __updatePlayerVictory()
+  function UpdatePlayerVictory()
   {
-    won = __getCurrentScene({ completed: true }).completed;
+    won = GetCurrentScene({ completed: true }).completed;
   }
 
-  function __killPlayerIfItTouchesItself(): void
+  function KillPlayerIfItTouchesItself(): void
   {
     Functions.KillPlayerIfItTouchedItself(player, direction, blockConfigs)
   }
 
-  function __renderPlayer(context: CanvasRenderingContext2D, player: Types.Player): void 
+  function RenderPlayer(context: CanvasRenderingContext2D, player: Types.Player): void 
   {
     context.fillStyle = 'red';
 
@@ -239,11 +239,11 @@ window.onload = function() {
     })
   }
 
-  function __renderSceneAsItIsIncompleted(context: CanvasRenderingContext2D, scene): void 
+  function RenderSceneAsItIsIncompleted(context: CanvasRenderingContext2D, scene): void 
   {
     context.fillStyle = `black`;
 
-    __clearInputFromGarbage<any>(scene.blocks).forEach(function(block, index)
+    ClearInputFromGarbage<any>(scene.blocks).forEach(function(block, index)
     {
       if ('block' in block == false) 
       {
@@ -252,7 +252,7 @@ window.onload = function() {
 
       const _block = block.block
 
-      _block.setCoordinates(MapToPositionOnScreen(context, _block.position))
+      _block.setCoordinates(MapToPositionOnScreen(context, block.position))
 
       if (block.drawable == true) 
       {
@@ -266,11 +266,11 @@ window.onload = function() {
     });
   }
 
-  function __renderSceneAsItIsCompleted(context: CanvasRenderingContext2D, scene): void 
+  function RenderSceneAsItIsCompleted(context: CanvasRenderingContext2D, scene): void 
   {
     context.fillStyle = `black`;
 
-    __clearInputFromGarbage<any>(scene.blocks).forEach((block, index) => 
+    ClearInputFromGarbage<any>(scene.blocks).forEach((block, index) => 
     {
       if (
         block.block instanceof Boosters.Apple ||
@@ -290,35 +290,35 @@ window.onload = function() {
     });
   }
 
-  function __renderScene(context: CanvasRenderingContext2D, scene): void 
+  function RenderScene(context: CanvasRenderingContext2D, scene): void 
   {
     if (scene.completed == true)
     {
-      __renderSceneAsItIsCompleted(context, scene)
+      RenderSceneAsItIsCompleted(context, scene)
     } else 
     {
-      __renderSceneAsItIsIncompleted(context, scene)
+      RenderSceneAsItIsIncompleted(context, scene)
     }
   }
 
-  function __getCurrentScene(defaultValue: any = undefined): any 
+  function GetCurrentScene(defaultValue: any = undefined): any 
   {
     return scenes.find(x => x.scene.every((coordinate, index: number) => coordinate == pages[index])) || defaultValue
   }
 
-  function __isGarbage<T>(x: T): boolean
+  function IsGarbage<T>(x: T): boolean
   {
     return (x === undefined || x === null)
   }
 
-  function __clearInputFromGarbage<T>(input: T[]): T[] 
+  function ClearInputFromGarbage<T>(input: T[]): T[] 
   {
-    return input.filter(x => __isGarbage<T>(x) == false)
+    return input.filter(x => IsGarbage<T>(x) == false)
   }
 
-  function __makePlayerImmortalIfThereIsABossBeatedOnTheLevel(player: Types.Player): void 
+  function MakePlayerImmortalIfThereIsABossBeatedOnTheLevel(player: Types.Player): void 
   {
-    const blocks = __clearInputFromGarbage<any>(__getCurrentScene({ blocks: [] }).blocks)
+    const blocks = ClearInputFromGarbage<any>(GetCurrentScene({ blocks: [] }).blocks)
 
     if (blocks.some(x => x.block instanceof Enemies.Trapper) == true) 
     {
@@ -327,7 +327,7 @@ window.onload = function() {
     }
   }
 
-  function __showPlayerHealthOrItsImmortalityOnTheScreen(context: CanvasRenderingContext2D, player: Types.Player): void 
+  function ShowPlayerHealthOrItsImmortalityOnTheScreen(context: CanvasRenderingContext2D, player: Types.Player): void 
   {
     const x: number = canvas.width / 2
     const y: number = canvas.height / 2
@@ -343,19 +343,19 @@ window.onload = function() {
     }
   }
 
-  function __outputPlayerAbsorbtionInNeededFormat(): string 
+  function OutputPlayerAbsorbtionInNeededFormat(): string 
   {
     return `${ player.blocks.length - 3 }`
   }
 
-  function __outputPlayerSpeedInNeededFormat(): string
+  function OutputPlayerSpeedInNeededFormat(): string
   {
     const START_SPEED: number = 200
 
     return `${ (START_SPEED + blockConfigs.size - speedCoefficient) / blockConfigs.size }`
   }
 
-  function __showPlayerStatistics(context: CanvasRenderingContext2D, player: Types.Player): void
+  function ShowPlayerStatistics(context: CanvasRenderingContext2D, player: Types.Player): void
   {
     const x: number = canvas.width / 2
     const y: number = canvas.height / 2
@@ -363,27 +363,27 @@ window.onload = function() {
 
     context.fillStyle = 'green'
 
-    context.fillText(`Speed: ${ __outputPlayerSpeedInNeededFormat() } block/second`, x, y + padding);
-    context.fillText(`Absorbtion: ${ __outputPlayerAbsorbtionInNeededFormat() } damage`, x, y + 2 * padding);
+    context.fillText(`Speed: ${ OutputPlayerSpeedInNeededFormat() } block/second`, x, y + padding);
+    context.fillText(`Absorbtion: ${ OutputPlayerAbsorbtionInNeededFormat() } damage`, x, y + 2 * padding);
   }
 
-  function __dependenceAlphaChannelToPlayerHealth(player: Types.Player): number 
+  function DependenceAlphaChannelToPlayerHealth(player: Types.Player): number 
   {
     return Math.min(1 - player.health / 1000, 0.75)
   }
 
-  function __showEffectsIfPlayerHasExtremelyLowHealth(context: CanvasRenderingContext2D, player: Types.Player): void 
+  function ShowEffectsIfPlayerHasExtremelyLowHealth(context: CanvasRenderingContext2D, player: Types.Player): void 
   {
     if (player.health <= EXTREMELY_LOW_HEALTH) 
     {
-      blockConfigs.background = `rgba(255, 0, 0, ${ __dependenceAlphaChannelToPlayerHealth(player) })`
+      blockConfigs.background = `rgba(255, 0, 0, ${ DependenceAlphaChannelToPlayerHealth(player) })`
 
       context.fillStyle = blockConfigs.background
       context.fillRect(borderOffsetX, borderOffsetY, canvas.width - borderOffsetX, canvas.height - borderOffsetY)
     }
   }
 
-  function __showCurrentScenePosition(context: CanvasRenderingContext2D, scene): void 
+  function ShowCurrentScenePosition(context: CanvasRenderingContext2D, scene): void 
   {
     const canvas: HTMLCanvasElement = context.canvas
     const position: [number, number] = scene.scene
@@ -393,52 +393,52 @@ window.onload = function() {
     context.fillText(`(${ position[0] }:${ position[1] })`, canvas.width / 2, 10 + y)
   }
 
-  function __renderBackground(context: CanvasRenderingContext2D): void 
+  function RenderBackground(context: CanvasRenderingContext2D): void 
   {
     context.fillStyle = 'white'
 
     context.fillRect(borderOffsetX, borderOffsetY, canvas.width - borderOffsetX * 2, canvas.height - borderOffsetY * 2)
   }
 
-  function __incrementCompletedLevels(): void 
+  function IncrementCompletedLevels(): void 
   {
     levelsCompleted = levelsCompleted + 1
   }
 
-  function __markSceneAsCompleted(): void 
+  function MarkSceneAsCompleted(): void 
   {
-    won = __getCurrentScene({ completed: false }).completed = true 
+    won = GetCurrentScene({ completed: false }).completed = true 
 
-    __incrementCompletedLevels()
+    IncrementCompletedLevels()
   }
 
-  function __onLevelCompleted(player: Types.Player): void 
+  function OnLevelCompleted(player: Types.Player): void 
   {
     const BASE_HEALTH_GROWTH: number = 50
 
     // APPLES EATEN TO ACCESS NEXT LEVEL
     if (player.score >= SCORES_TO_ACCESS_NEXT_LEVEL) 
     {
-      __markSceneAsCompleted()
+      MarkSceneAsCompleted()
 
       player.health = BASE_PLAYER_HEALTH + levelsCompleted * BASE_HEALTH_GROWTH;
       player.score = 0;
     }
   }
 
-  function __onPlayerOutOfField(player: Types.Player): void 
+  function OnPlayerOutOfField(player: Types.Player): void 
   {
     const tail: Types.Point = player.blocks[player.blocks.length - 1]
 
-    if (__isSegmentOutOfField(context, tail) == true) 
+    if (IsSegmentOutOfField(context, tail) == true) 
     {
-      __parryPlayer(tail)
-      __goToTheNextLevelIfPlayerWon()
+      ParryPlayer(tail)
+      GoToTheNextLevelIfPlayerWon()
     }
   }
   
-  __initializeContext(context)
-  __addLevelToPosition0x0(context)
+  InitializeContext(context)
+  AddLevelToPosition0x0(context)
 
   requestAnimationFrame(function loop() {
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -448,25 +448,25 @@ window.onload = function() {
       speedCoefficient = startSpeedCoefficient + (player.blocks.length - 3) * 2;
     }
 
-    __movePlayer(player, direction)
-    __killPlayerIfItTouchesItself()
+    MovePlayer(player, direction)
+    KillPlayerIfItTouchesItself()
 
-    __updatePlayerVictory()
+    UpdatePlayerVictory()
 
-    __onPlayerDeath(player)
-    __onLevelCompleted(player)    
-    __onPlayerOutOfField(player)
-    __makePlayerImmortalIfThereIsABossBeatedOnTheLevel(player)
+    OnPlayerDeath(player)
+    OnLevelCompleted(player)    
+    OnPlayerOutOfField(player)
+    MakePlayerImmortalIfThereIsABossBeatedOnTheLevel(player)
 
-    __renderBackground(context)
-    __renderAxes(context);
-    __renderPlayer(context, player)
-    __renderScene(context, __getCurrentScene())
+    RenderBackground(context)
+    RenderAxes(context);
+    RenderPlayer(context, player)
+    RenderScene(context, GetCurrentScene())
 
-    __showCurrentScenePosition(context, __getCurrentScene())
-    __showPlayerHealthOrItsImmortalityOnTheScreen(context, player)
-    __showPlayerStatistics(context, player)
-    __showEffectsIfPlayerHasExtremelyLowHealth(context, player)
+    ShowCurrentScenePosition(context, GetCurrentScene())
+    ShowPlayerHealthOrItsImmortalityOnTheScreen(context, player)
+    ShowPlayerStatistics(context, player)
+    ShowEffectsIfPlayerHasExtremelyLowHealth(context, player)
 
     requestAnimationFrame(loop)
   });
