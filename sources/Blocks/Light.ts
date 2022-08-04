@@ -5,8 +5,6 @@ export class LightBlock {
   constructor(coordinates, size = 1) {
     this.coordinates = coordinates;
     this.size = size;
-
-    // this.bullets = [[null, null]];
   }
 
   setCoordinates(coordinates) {
@@ -18,7 +16,6 @@ export class LightBlock {
     context.fillRect(this.coordinates[0], this.coordinates[1], this.size, this.size);
   }
 
-  
   act(player, context, configs, screen = [], scene, index)  {
     const head = player.blocks[0];
 

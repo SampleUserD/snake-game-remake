@@ -21,7 +21,17 @@ const DEATH_MESSAGES: string[] = [
   `You should be at next door right now...` 
 ]
 
-window.onload = function() {
+class MovementStates 
+{
+  public static readonly Left: Types.Vector = [-1, 0]
+  public static readonly Right: Types.Vector = [1, 0]
+  public static readonly Up: Types.Vector = [0, -1]
+  public static readonly Down: Types.Vector = [0, 1]
+  public static readonly Stop: Types.Vector = [0, 0]
+}
+
+window.onload = function() 
+{
   const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
   const context = canvas.getContext("2d");
   
@@ -33,32 +43,27 @@ window.onload = function() {
   const direction: Types.Vector = [1, 0]
   const pages: Types.Vector = [0, 0]
   
-  window.onkeydown = function(event) {
-    let code = event.code.toLowerCase();
+  window.onkeydown = function(event: KeyboardEvent) {
+    let code = event.code.toLowerCase().replace('key', new String().toString());
     
-    if (code == 'keya' && direction[0] != 1) {
-      direction[0] = -1;
-      direction[1] = 0;
+    if (code == 'a' && direction[0] != 1) {
+      SetDirection(MovementStates.Left)
     }
     
-    if (code == 'keyd' && direction[0] != -1) {
-      direction[0] = 1;
-      direction[1] = 0;
+    if (code == 'd' && direction[0] != -1) {
+      SetDirection(MovementStates.Right)
     }
     
-    if (code == 'keyw' && direction[1] != 1) {
-      direction[1] = -1;
-      direction[0] = 0;
+    if (code == 'w' && direction[1] != 1) {
+      SetDirection(MovementStates.Up)
     }
     
-    if (code == 'keys' && direction[1] != -1) {
-      direction[1] = 1;
-      direction[0] = 0;
+    if (code == 's' && direction[1] != -1) {
+      SetDirection(MovementStates.Down)
     }
 
     if (code == 'space') {
-      direction[0] = 0;
-      direction[1] = 0;
+      SetDirection(MovementStates.Stop)
     }
   }
 
@@ -70,9 +75,10 @@ window.onload = function() {
   const borderOffsetX = (canvas.width - lengthX * blockConfigs.size)/2;
   const borderOffsetY = (canvas.height - lengthY * blockConfigs.size)/2;
 
-  let won = false;
+  let won = false;  
+  let levelsCompleted = 0;
 
-  let player: Types.Player = { 
+  const player: Types.Player = { 
     blocks: [
       { 
         x: borderOffsetX, 
@@ -88,8 +94,6 @@ window.onload = function() {
     score: 0, 
     immortal: false 
   }
-
-  let levelsCompleted = 0;
 
   const scenes = [];
   const gameConfiguration = { renderAxes: false };
@@ -113,10 +117,10 @@ window.onload = function() {
     const [ lengthX, lengthY ]: Types.Vector = CalculateBlocksLengthsThatFitsOnScreen(context)
     const size: number = GetUnifiedSize()
 
+    const scene = GetCurrentScene({ scene: [0, 0], blocks: [], completed: false });
+
     for (let blockPosition = 0; blockPosition < lengthX; blockPosition++)
     {
-      const scene = GetCurrentScene({ blocks: [], completed: true });
-
       scene.blocks.push({ 
         position: [ blockPosition, Math.round(lengthY / 4) ], 
         block: new Blocks.Light([], size) 
@@ -127,12 +131,79 @@ window.onload = function() {
         block: new Blocks.Light([], size) 
       })
     }
+
+    scenes.push(scene)
   }
+
+  // ------------------------ Global state changers ------------------------
+
+  function SetDirection(_direction: Types.Vector): void 
+  {
+    direction[0] = _direction[0]
+    direction[1] = _direction[1]
+  }
+
+  function IncrementCompletedLevels(): void 
+  {
+    levelsCompleted = levelsCompleted + 1
+  }
+
+  function MarkSceneAsCompleted(): void 
+  {
+    won = GetCurrentScene({ completed: false }).completed = true 
+
+    IncrementCompletedLevels()
+  }
+
+  function ChangeBackgroundTo(context: CanvasRenderingContext2D, backgroundColor: string): void 
+  {
+    const width: number = context.canvas.width
+    const height: number = context.canvas.height
+    const [x, y]: Types.Vector = CalculateBorders(context)
+
+    blockConfigs.background = backgroundColor
+
+    context.fillStyle = backgroundColor
+    context.fillRect(x, y, width - x, height - y)
+  }
+  
+  function UpdatePlayerVictory()
+  {
+    won = IsCurrentSceneCompleted();
+  }
+
+  // ------------------------ Global state changers ------------------------
+
+  // ------------------------- Global state readers ------------------------
 
   function GetUnifiedSize(): number 
   {
     return blockConfigs.size
   }
+
+  function GetCurrentScenePosition(): [number, number]
+  {
+    return Array.from(pages) as [number, number]
+  }
+
+  function GetLevelsCompletedCount(): number 
+  {
+    return levelsCompleted as number
+  }
+  
+  function GetCurrentScene(defaultValue: any = undefined): any 
+  {
+    return ClearInputFromGarbage<any>(scenes).find(x => x.scene.every((coordinate, index: number) => coordinate == pages[index])) || defaultValue
+  }
+
+  function IsCurrentSceneCompleted(): boolean
+  {
+    const scene = GetCurrentScene({ completed: true })
+
+    return scene.completed
+  }
+
+  // ------------------------- Global state readers ------------------------
 
   function CalculateBlocksLengthsThatFitsOnScreen(context: CanvasRenderingContext2D): Types.Vector
   {
@@ -198,7 +269,7 @@ window.onload = function() {
   function MovePlayer(player: Types.Player, direction: Types.Vector): void 
   {
     // move player()
-    Functions.MovePlayer(player, direction)()
+    Functions.MovePlayer(player, direction, GetUnifiedSize())()
   }
 
   function GoToTheNextLevelIfPlayerWon()
@@ -217,11 +288,6 @@ window.onload = function() {
     const [ borderOffsetX, borderOffsetY ]: Types.Vector = CalculateBorders(context)
 
     Functions.RenderAxes(context, lengthX, lengthY, borderOffsetX, borderOffsetY, blockConfigs, gameConfiguration)()   
-  }
-
-  function UpdatePlayerVictory()
-  {
-    won = GetCurrentScene({ completed: true }).completed;
   }
 
   function KillPlayerIfItTouchesItself(): void
@@ -301,11 +367,6 @@ window.onload = function() {
     }
   }
 
-  function GetCurrentScene(defaultValue: any = undefined): any 
-  {
-    return scenes.find(x => x.scene.every((coordinate, index: number) => coordinate == pages[index])) || defaultValue
-  }
-
   function IsGarbage<T>(x: T): boolean
   {
     return (x === undefined || x === null)
@@ -320,17 +381,17 @@ window.onload = function() {
   {
     const blocks = ClearInputFromGarbage<any>(GetCurrentScene({ blocks: [] }).blocks)
 
-    if (blocks.some(x => x.block instanceof Enemies.Trapper) == true) 
+    if (blocks.some(x => x.block instanceof Enemies.Trapper) == true && IsCurrentSceneCompleted() == true) 
     {
-      player.immortal = true;
-      blockConfigs.background = 'transparent';
+      player.immortal = true
+      ChangeBackgroundTo(context, 'transparent')
     }
   }
 
   function ShowPlayerHealthOrItsImmortalityOnTheScreen(context: CanvasRenderingContext2D, player: Types.Player): void 
   {
-    const x: number = canvas.width / 2
-    const y: number = canvas.height / 2
+    const x: number = context.canvas.width / 2
+    const y: number = context.canvas.height / 2
 
     context.fillStyle = 'red'
 
@@ -357,8 +418,8 @@ window.onload = function() {
 
   function ShowPlayerStatistics(context: CanvasRenderingContext2D, player: Types.Player): void
   {
-    const x: number = canvas.width / 2
-    const y: number = canvas.height / 2
+    const x: number = context.canvas.width / 2
+    const y: number = context.canvas.height / 2
     const padding: number = 50
 
     context.fillStyle = 'green'
@@ -376,10 +437,7 @@ window.onload = function() {
   {
     if (player.health <= EXTREMELY_LOW_HEALTH) 
     {
-      blockConfigs.background = `rgba(255, 0, 0, ${ DependenceAlphaChannelToPlayerHealth(player) })`
-
-      context.fillStyle = blockConfigs.background
-      context.fillRect(borderOffsetX, borderOffsetY, canvas.width - borderOffsetX, canvas.height - borderOffsetY)
+      ChangeBackgroundTo(context, `rgba(255, 0, 0, ${ DependenceAlphaChannelToPlayerHealth(player) })`)
     }
   }
 
@@ -395,21 +453,13 @@ window.onload = function() {
 
   function RenderBackground(context: CanvasRenderingContext2D): void 
   {
+    const width: number = context.canvas.width
+    const height: number = context.canvas.height
+    const [x, y]: Types.Vector = CalculateBorders(context)
+
     context.fillStyle = 'white'
 
-    context.fillRect(borderOffsetX, borderOffsetY, canvas.width - borderOffsetX * 2, canvas.height - borderOffsetY * 2)
-  }
-
-  function IncrementCompletedLevels(): void 
-  {
-    levelsCompleted = levelsCompleted + 1
-  }
-
-  function MarkSceneAsCompleted(): void 
-  {
-    won = GetCurrentScene({ completed: false }).completed = true 
-
-    IncrementCompletedLevels()
+    context.fillRect(x, y, width - x * 2, height - y * 2)
   }
 
   function OnLevelCompleted(player: Types.Player): void 
@@ -421,7 +471,7 @@ window.onload = function() {
     {
       MarkSceneAsCompleted()
 
-      player.health = BASE_PLAYER_HEALTH + levelsCompleted * BASE_HEALTH_GROWTH;
+      player.health = BASE_PLAYER_HEALTH + GetLevelsCompletedCount() * BASE_HEALTH_GROWTH;
       player.score = 0;
     }
   }
@@ -440,7 +490,8 @@ window.onload = function() {
   InitializeContext(context)
   AddLevelToPosition0x0(context)
 
-  requestAnimationFrame(function loop() {
+  requestAnimationFrame(function loop() 
+  {
     context.clearRect(0, 0, canvas.width, canvas.height);
     
     if (player.blocks.length > 2) 
@@ -469,5 +520,5 @@ window.onload = function() {
     ShowEffectsIfPlayerHasExtremelyLowHealth(context, player)
 
     requestAnimationFrame(loop)
-  });
+  })
 }
