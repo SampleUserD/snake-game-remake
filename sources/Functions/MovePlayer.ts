@@ -11,5 +11,7 @@ export const MovePlayer = (function(player: Player, direction: Vector, size: num
 
     tail.x = head.x + direction[0] * size
     tail.y = head.y + direction[1] * size
+
+    player.blocks.unshift(tail)
   })
 })
