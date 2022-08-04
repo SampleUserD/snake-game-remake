@@ -35,11 +35,6 @@ window.onload = function()
   const canvas = document.querySelector("#canvas") as HTMLCanvasElement;
   const context = canvas.getContext("2d");
   
-  canvas.width = innerHeight;
-  canvas.height = innerHeight;
-
-  canvas.style.marginLeft = `${ Math.abs(innerHeight*0.5 - canvas.width) }`;
-  
   const direction: Types.Vector = [1, 0]
   const pages: Types.Vector = [0, 0]
   
@@ -68,48 +63,42 @@ window.onload = function()
   }
 
   const blockConfigs = { size: 10, background: 'transparent' }; // 15
-
-  const lengthX = (canvas.width - canvas.width%blockConfigs.size)/blockConfigs.size;
-  const lengthY = (canvas.height - canvas.height%blockConfigs.size)/blockConfigs.size;
-
-  const borderOffsetX = (canvas.width - lengthX * blockConfigs.size)/2;
-  const borderOffsetY = (canvas.height - lengthY * blockConfigs.size)/2;
+  const gameConfiguration = { renderAxes: false };
 
   let won = false;  
   let levelsCompleted = 0;
 
   const player: Types.Player = { 
-    blocks: [
-      { 
-        x: borderOffsetX, 
-        y: borderOffsetY 
-      }, 
-      { 
-        x: borderOffsetX+blockConfigs.size, 
-        y: borderOffsetY 
-      }
-    ],
-    health: 500, 
-    size: blockConfigs.size, 
+    blocks: [],
+
+    health: BASE_PLAYER_HEALTH, 
+    size: GetUnifiedSize(), 
     score: 0, 
+    
     immortal: false 
   }
 
   const scenes = [];
-  const gameConfiguration = { renderAxes: false };
-
   const startSpeedCoefficient = 30 + (player.blocks.length - 3)*2;
+  
   let speedCoefficient = startSpeedCoefficient;
+
+  // ---------------------- Initialization ---------------------- 
 
   function InitializeContext(context: CanvasRenderingContext2D): void 
   {
     const canvas: HTMLCanvasElement = context.canvas
+    
+    canvas.width = innerHeight
+    canvas.height = innerHeight
+  
+    canvas.style.marginLeft = `${ Math.abs(innerHeight*0.5 - canvas.width) }`
 
-    context.clearRect(0, 0, canvas.width, canvas.height);
+    context.clearRect(0, 0, canvas.width, canvas.height)
 
-    context.font = '20px Helvetica';
-    context.textBaseline = 'middle';
-    context.textAlign = 'center';
+    context.font = '20px Helvetica'
+    context.textBaseline = 'middle'
+    context.textAlign = 'center'
   }
 
   function AddLevelToPosition0x0(context: CanvasRenderingContext2D)
@@ -134,6 +123,18 @@ window.onload = function()
 
     scenes.push(scene)
   }
+
+  function ConfiguratePlayer(player: Types.Player, context: CanvasRenderingContext2D): void 
+  {
+    const [x, y]: Types.Vector = CalculateBorders(context)
+    const size: number = GetUnifiedSize()
+
+    player.blocks.push({ x: x + 0 * size, y: y })
+    player.blocks.push({ x: x + 1 * size, y: y })
+    player.blocks.push({ x: x + 2 * size, y: y })
+  }
+
+  // ---------------------- Initialization ----------------------
 
   // ------------------------ Global state changers ------------------------
 
@@ -261,9 +262,12 @@ window.onload = function()
     return Functions.IsSegmentTouchedAnother(player, blockConfigs)(first, second)
   }
 
-  function ParryPlayer(tail: Types.Point)
+  function ParryPlayer(player: Types.Player, direction: Types.Vector, context: CanvasRenderingContext2D)
   {
-    Functions.ParryPlayer(borderOffsetX, borderOffsetY, player, direction, canvas, tail)
+    const tail: Types.Point = player.blocks[player.blocks.length - 1]
+    const [x, y]: Types.Vector = CalculateBorders(context)
+
+    Functions.ParryPlayer(x, y, player, direction, context.canvas, tail)
   }
 
   function MovePlayer(player: Types.Player, direction: Types.Vector): void 
@@ -482,13 +486,14 @@ window.onload = function()
 
     if (IsSegmentOutOfField(context, tail) == true) 
     {
-      ParryPlayer(tail)
+      ParryPlayer(player, direction, context)
       GoToTheNextLevelIfPlayerWon()
     }
   }
   
   InitializeContext(context)
   AddLevelToPosition0x0(context)
+  ConfiguratePlayer(player, context)
 
   requestAnimationFrame(function loop() 
   {
