@@ -41,32 +41,32 @@ window.onload = function()
   window.onkeydown = function(event: KeyboardEvent) {
     let code = event.code.toLowerCase().replace('key', new String().toString());
     
-    if (code == 'a' && direction[0] != 1) {
-      SetDirection(MovementStates.Left)
+    if (code == 'a' && MatchesCurrentMovementState(MovementStates.Right) == false) {
+      SetMovementState(MovementStates.Left)
     }
     
-    if (code == 'd' && direction[0] != -1) {
-      SetDirection(MovementStates.Right)
+    if (code == 'd' && MatchesCurrentMovementState(MovementStates.Left) == false) {
+      SetMovementState(MovementStates.Right)
     }
     
-    if (code == 'w' && direction[1] != 1) {
-      SetDirection(MovementStates.Up)
+    if (code == 'w' && MatchesCurrentMovementState(MovementStates.Down) == false) {
+      SetMovementState(MovementStates.Up)
     }
     
-    if (code == 's' && direction[1] != -1) {
-      SetDirection(MovementStates.Down)
+    if (code == 's' && MatchesCurrentMovementState(MovementStates.Up) == false) {
+      SetMovementState(MovementStates.Down)
     }
 
     if (code == 'space') {
-      SetDirection(MovementStates.Stop)
+      SetMovementState(MovementStates.Stop)
     }
   }
 
-  const blockConfigs = { size: 10, background: 'transparent' }; // 15
-  const gameConfiguration = { renderAxes: false };
-
-  let won = false;  
-  let levelsCompleted = 0;
+  const blockConfigs = { size: 10, background: 'transparent' } // 15
+  const gameConfiguration = { renderAxes: false }
+ 
+  let won = false
+  let levelsCompleted = 0
 
   const player: Types.Player = { 
     blocks: [],
@@ -138,7 +138,7 @@ window.onload = function()
 
   // ------------------------ Global state changers ------------------------
 
-  function SetDirection(_direction: Types.Vector): void 
+  function SetMovementState(_direction: Types.Vector): void 
   {
     direction[0] = _direction[0]
     direction[1] = _direction[1]
@@ -151,8 +151,7 @@ window.onload = function()
 
   function MarkSceneAsCompleted(): void 
   {
-    won = GetCurrentScene({ completed: false }).completed = true 
-
+    UpdatePlayerVictory()
     IncrementCompletedLevels()
   }
 
@@ -202,6 +201,11 @@ window.onload = function()
     const scene = GetCurrentScene({ completed: true })
 
     return scene.completed
+  }
+
+  function MatchesCurrentMovementState(state: Types.Vector): boolean
+  {
+    return state.every((x: number, i: number) => direction[i] == x)
   }
 
   // ------------------------- Global state readers ------------------------
