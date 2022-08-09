@@ -2,8 +2,6 @@ import Blocks from './Blocks/Main.js'
 import Boosters from './Boosters/Main.js'
 import Enemies from './Enemies/Main.js'
 
-import Functions from './Functions/_Main.js'
-
 import * as Types from './Types/Main.js'
 
 const BASE_PLAYER_HEALTH: number = 500
@@ -38,26 +36,32 @@ window.onload = function()
   const direction: Types.Vector = [1, 0]
   const pages: Types.Vector = [0, 0]
   
-  window.onkeydown = function(event: KeyboardEvent) {
+  window.onkeydown = function(event: KeyboardEvent) 
+  {
     let code = event.code.toLowerCase().replace('key', new String().toString());
     
-    if (code == 'a' && MatchesCurrentMovementState(MovementStates.Right) == false) {
+    if (code == 'a' && MatchesCurrentMovementState(MovementStates.Right) == false) 
+    {
       SetMovementState(MovementStates.Left)
     }
     
-    if (code == 'd' && MatchesCurrentMovementState(MovementStates.Left) == false) {
+    if (code == 'd' && MatchesCurrentMovementState(MovementStates.Left) == false) 
+    {
       SetMovementState(MovementStates.Right)
     }
     
-    if (code == 'w' && MatchesCurrentMovementState(MovementStates.Down) == false) {
+    if (code == 'w' && MatchesCurrentMovementState(MovementStates.Down) == false) 
+    {
       SetMovementState(MovementStates.Up)
     }
     
-    if (code == 's' && MatchesCurrentMovementState(MovementStates.Up) == false) {
+    if (code == 's' && MatchesCurrentMovementState(MovementStates.Up) == false) 
+    {
       SetMovementState(MovementStates.Down)
     }
 
-    if (code == 'space') {
+    if (code == 'space') 
+    {
       SetMovementState(MovementStates.Stop)
     }
   }
@@ -263,44 +267,132 @@ window.onload = function()
 
   function IsSegmentTouchesAnother(first: Types.Point, second: Types.Point): boolean
   {
-    return Functions.IsSegmentTouchedAnother(player, blockConfigs)(first, second)
+    const size: number = GetUnifiedSize()
+
+    return (
+      first.x + size > second.x && 
+      first.y + size > second.y && 
+      first.x < second.x + size && 
+      first.y < second.y + size
+    )
   }
 
   function ParryPlayer(player: Types.Player, direction: Types.Vector, context: CanvasRenderingContext2D)
   {
+    const head: Types.Point = player.blocks[0]
     const tail: Types.Point = player.blocks[player.blocks.length - 1]
+   
+    const width: number = context.canvas.width
+    const height: number = context.canvas.height
     const [x, y]: Types.Vector = CalculateBorders(context)
 
-    Functions.ParryPlayer(x, y, player, direction, context.canvas, tail)
+    if (tail.x > width - x)
+    {
+      tail.x = 0 + x
+    } 
+    else if (tail.x < 0 + x)
+    {
+      tail.x = width - x
+    } 
+    else if (tail.y > height - y)
+    {
+      tail.y = 0 + y
+    } 
+    else if (tail.y < 0 + y)
+    {
+      tail.y = height - y
+    }
   }
 
   function MovePlayer(player: Types.Player, direction: Types.Vector): void 
   {
     // move player()
-    Functions.MovePlayer(player, direction, GetUnifiedSize())()
+    const tail: Types.Point = player.blocks.splice(player.blocks.length - 1, 1)[0]
+    const head: Types.Point = player.blocks[0]
+    const size: number = GetUnifiedSize()
+
+    tail.x = head.x + direction[0] * size
+    tail.y = head.y + direction[1] * size
+
+    player.blocks.unshift(tail)
   }
 
   function GoToTheNextLevelIfPlayerWon()
   {
-    Functions.GoToTheNextLevelIfPlayerWon(won, direction, pages)()
+    if (IsCurrentSceneCompleted() == false)
+    {
+      return undefined
+    }
+
+    // on next page ()
+    pages[0] += direction[0]
+    pages[1] += direction[1]
   }
 
   function OnPlayerDeath(player: Types.Player)
   {
-    Functions.OnPlayerDeath(player, DEATH_MESSAGES)()
+    if (player.health <= 0) 
+    {
+      alert(DEATH_MESSAGES[Math.floor(Math.random() * DEATH_MESSAGES.length)]);
+      window.location.reload();
+
+      return undefined;
+    }
   }
 
   function RenderAxes(context: CanvasRenderingContext2D)
   {
-    const [ lengthX, lengthY ]: Types.Vector = CalculateBlocksLengthsThatFitsOnScreen(context)
-    const [ borderOffsetX, borderOffsetY ]: Types.Vector = CalculateBorders(context)
+    const lengths: Types.Vector = CalculateBlocksLengthsThatFitsOnScreen(context)
+    const offsets: Types.Vector = CalculateBorders(context)
+    
+    const width: number = context.canvas.width
+    const height: number = context.canvas.height
+    const size: number = GetUnifiedSize()
 
-    Functions.RenderAxes(context, lengthX, lengthY, borderOffsetX, borderOffsetY, blockConfigs, gameConfiguration)()   
+    context.beginPath()
+    context.strokeStyle = 'black'
+
+    for (let x = 0; x < lengths[0]; x++) 
+    {
+      context.moveTo(offsets[0] + x * size, offsets[1])
+      context.lineTo(offsets[0] + x * size, height - offsets[1])
+    }
+
+    for (let y = 0; y < lengths[1]; y++) 
+    {
+      context.moveTo(offsets[0], offsets[1] + y * size)
+      context.lineTo(width - offsets[0], offsets[1] + y * size)
+    }
+
+    context.stroke()
+    context.beginPath()
   }
 
-  function KillPlayerIfItTouchesItself(): void
+  function KillPlayer(player: Types.Player): void 
   {
-    Functions.KillPlayerIfItTouchedItself(player, direction, blockConfigs)
+    player.health = -1
+  }
+
+  function KillPlayerIfItTouchesItself(player: Types.Player): void
+  {
+    const head: Types.Point = player.blocks[0]
+    const isStoped: boolean = MatchesCurrentMovementState(MovementStates.Stop)
+    const isImmortal: boolean = player.immortal
+
+    if (isStoped == true || isImmortal == true)
+    {
+      return undefined
+    }
+
+    for (let index = 1; index < player.blocks.length; index++)
+    {
+      const segment: Types.Point = player.blocks[index];
+
+      if (IsSegmentTouchesAnother(head, segment) == true)
+      {
+        KillPlayer(player)
+      }
+    }
   }
 
   function RenderPlayer(context: CanvasRenderingContext2D, player: Types.Player): void 
@@ -509,7 +601,7 @@ window.onload = function()
     }
 
     MovePlayer(player, direction)
-    KillPlayerIfItTouchesItself()
+    KillPlayerIfItTouchesItself(player)
 
     UpdatePlayerVictory()
 
